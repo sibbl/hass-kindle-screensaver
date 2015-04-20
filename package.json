@@ -1,0 +1,18 @@
+{
+    "name": "KindlePic",
+    "version": "0.0.0",
+    "description": "KindlePic",
+    "main": "app.js",
+    "author": {
+        "name": "Sebastian",
+        "email": ""
+    },
+    "scripts": {
+        "start": "node app.js"
+    },
+    "dependencies": {
+        "express": "^4.12.3",
+        "gm": "^1.17.0",
+        "svgexport": "^0.2.4"
+    }
+}
