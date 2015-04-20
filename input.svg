@@ -1,10 +1,78 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Generator: Adobe Illustrator 18.1.0, SVG Export Plug-In . SVG Version: 6.00 Build 0)  -->
-<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg version="1.1" id="Ebene_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
-	 width="600px" height="800px" viewBox="-120 -102.7 600 800" enable-background="new -120 -102.7 600 800" xml:space="preserve">
-<rect id="bg" x="-120" y="-102.7" fill="#FFFFFF" stroke="#000000" stroke-miterlimit="10" width="600" height="800"/>
-<rect x="-195.3" y="28.2" display="none" fill="none" width="527" height="219.1"/>
-<rect x="-120" y="173.6" fill="none" width="600" height="154"/>
-<text transform="matrix(1 0 0 1 38.9004 225.1113)" font-family="'ArialNarrow'" font-size="72">%testvar%</text>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   height="800"
+   width="600"
+   version="1.1"
+   id="svg3336"
+   inkscape:version="0.91 r13725"
+   sodipodi:docname="input.svg">
+  <metadata
+     id="metadata3428">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <sodipodi:namedview
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1"
+     objecttolerance="10"
+     gridtolerance="10"
+     guidetolerance="10"
+     inkscape:pageopacity="0"
+     inkscape:pageshadow="2"
+     inkscape:window-width="1600"
+     inkscape:window-height="837"
+     id="namedview3426"
+     showgrid="false"
+     inkscape:zoom="0.8275"
+     inkscape:cx="403.11607"
+     inkscape:cy="400"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="g3364" />
+  <g
+     font-family="DejaVu Sans"
+     id="g3364">
+    <rect
+       id="rect3434"
+       width="600"
+       height="800"
+       x="0"
+       y="3.9268718e-014"
+       style="fill:#ffffff" />
+    <text
+       style="font-size:35px;text-anchor:middle"
+       font-size="35px"
+       y="787.3739"
+       x="590.8559"
+       id="text3366">
+      <tspan
+         style="text-align:end;text-anchor:end"
+         id="tspan3430">%time%</tspan>
+    </text>
+    <text
+       style="font-size:100px;text-anchor:end"
+       font-size="100px"
+       y="222.49896"
+       x="298.05032"
+       id="text3370">
+      <tspan
+         style="text-align:center;text-anchor:middle"
+         id="tspan3432">%temp%°C</tspan>
+    </text>
+  </g>
 </svg>

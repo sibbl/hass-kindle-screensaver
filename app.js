@@ -1,7 +1,9 @@
 ﻿var express = require('express'),
     svgexport = require('svgexport'),
     fs = require('fs'),
-    gm = require('gm');
+    path = require('path'),
+    gm = require('gm'),
+    dateformat = require('dateformat');
 
 var defaultPort = 5000;
 
@@ -12,7 +14,8 @@ var filenames = {
 
 var generateVars = function() {
     return {
-        'testvar': parseInt(Math.random() * 1000000)
+        'time': dateformat('dd.mm.yyyy HH:MM'),
+        'temp': 5
     };
 }
 
@@ -47,8 +50,7 @@ app.get('/', function(request, response) {
                         .bitdepth(8)
                         .write(filenames.pngdestination, function(err) {
                             if (err) return console.log(err);
-                            response.status(200).sendfile(filenames.pngdestination);
-                            console.log('done');
+                            response.status(200).sendFile(path.join(__dirname, filenames.pngdestination));
                             fs.unlinkSync('converted.png');
                             fs.unlinkSync('input_filled.svg');
                         });
