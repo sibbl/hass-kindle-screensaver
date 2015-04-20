@@ -3,7 +3,7 @@
     fs = require('fs'),
     path = require('path'),
     gm = require('gm'),
-    dateformat = require('dateformat');
+    moment = require('moment-timezone');
 
 var defaultPort = 5000;
 
@@ -14,7 +14,7 @@ var filenames = {
 
 var generateVars = function() {
     return {
-        'time': dateformat('dd.mm.yyyy HH:MM'),
+        'time': moment.tz('Europe/Berlin').format('D.MM.YYYY HH:mm'),
         'temp': 5
     };
 }
