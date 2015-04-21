@@ -3,8 +3,95 @@ html
   head
     title Kindle Cover
     link(rel='stylesheet', href='/css/style.css')
+    
+    script(type='text/javascript', src="https://www.google.com/jsapi?autoload={'modules':[{'name':'visualization','version':'1','packages':['corechart'],'language':'#{config.defaultLanguage}'}]}")
+    script(type="text/javascript").
+      google.setOnLoadCallback(drawChart);
+
+      function drawChart() {
+        var forecastData = new google.visualization.DataTable();
+        forecastData.addColumn('datetime', 'Time');
+        forecastData.addColumn('number', '°C Forecast');
+        var historyData = new google.visualization.DataTable();
+        historyData.addColumn('datetime', 'Time');
+        historyData.addColumn('number', '°C History');
+        var forecastRows = !{JSON.stringify(forecast.forecastGraphs.temperature)};
+        var historyRows = !{JSON.stringify(temperatureHistory)};
+        var startDate = !{chartBeginDate};
+        var endDate = !{chartEndDate};
+        for (var i = 0; i < forecastRows.length; i++ ) { 
+            var d = forecastRows[i][0] * 1000;
+            if(d >= startDate && d <= endDate) {
+                forecastRows[i][0] = new Date(d);
+                forecastData.addRow(forecastRows[i]);
+            }
+        }
+        for(var i = 0; i < historyRows.length; i++) {
+            historyRows[i][0] = new Date(historyRows[i][0]);
+            historyData.addRow(historyRows[i]);
+        }
+
+        var options = {
+          curveType: 'function',
+          vAxis: {
+            baselineColor: '#fff',
+            format: '# °C',
+            textPosition: 'in',
+          },
+          hAxis: {
+            baselineColor: '#fff',
+            format: 'H',
+            gridlines: {
+                color: '#fff'
+            },
+            textPosition: 'in',
+          },
+          legend: 'none',
+          interpolateNulls: true,
+          series: {
+            0: {
+                color: '#000',
+                areaOpacity: 0,
+                lineWidth: 3,
+
+            },
+            1: {
+                areaOpacity: 0.1,
+                color: '#000',
+                lineWidth: 0
+            }
+          },
+          chartArea: {
+                left: 0,
+                top: 0,
+                width: 600,
+                height: 200
+            }
+        };
+
+        var chart = new google.visualization.AreaChart(document.getElementById('temp_chart'));
+        
+        var joinedData = google.visualization.data.join(forecastData, historyData, 'full', [[0, 0]], [1], [1]);
+        chart.draw(joinedData, options);
+      }
   body
     div.temperature
       span= temperature
       span.unit °C
     div.time= time
+    div#temp_chart
+    div.forecast
+        each day in forecast.forecastDays
+            div
+                div.day= moment.unix(day.day_ts).format('dd')
+                div.max_temp= day.max_temp
+                div.min_temp= day.min_temp
+                div.sunrise= moment.unix(day.sunrise).format('LT')
+                div.sunset= moment.unix(day.sunset).format('LT')
+                div.sunhours= day.sun
+                div.rain= day.rain
+                div.uv= day.uv
+                div.windgust= 48
+                div.windangle= 45
+                img.day(src='https://www.netatmo.com/img/my/app/weather_symbol/for#{day.weather_symbol_day}@2x.png')
+                img.night(src='https://www.netatmo.com/img/my/app/weather_symbol/for#{day.weather_symbol_night}@2x.png')

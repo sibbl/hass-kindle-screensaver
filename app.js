@@ -9,12 +9,18 @@
     moment = require('moment-timezone'),
     webshot = require('webshot');
 
-var defaultPort = 5000;
-
-var filenames = {
-    'svgsource': 'input.svg',
-    'pngdestination': 'cover.png'
-}
+var config = {
+    defaultLanguage: 'de-DE',
+    defaultTimezone: 'Europe/Berlin',
+    netatmoAccessToken: '52d42bfc1777599b298b456c|bce486435e378f26eb0a935cd8a557e4',
+    netatmoDeviceId: '70:ee:50:03:93:60',
+    netatmoTemperatureModuleId: '02:00:00:03:cf:dc',
+    netatmoForecastUrl: 'https://www.netatmo.com/api/simplifiedfuturemeasure',
+    netatmoHistoryUrl: 'https://www.netatmo.com/api/getmeasure',
+    temperatureChartBeginDayTime: { hours: 2 },
+    temperatureChartEndDateTime: { days: 1, hours: 5 },
+    defaultPort: 5000
+};
 
 var renderOptions = {
     screenSize: {
@@ -24,20 +30,76 @@ var renderOptions = {
     defaultWhiteBackground: true
 };
 
-var getTemperature = function() {
+var getForecast = function() {
     var def = q.defer();
     var data = {
         form: {
-            device_id: '70:ee:50:06:94:30',
-            module_id: '02:00:00:05:df:ec',
+            device_id: config.netatmoDeviceId,
+            module_id: config.netatmoTemperatureModuleId,
+            access_token: config.netatmoAccessToken,
+            locale: config.defaultLanguage
+        }
+    };
+    request.post(config.netatmoForecastUrl, data, function (error, response, body) {
+        if (error || response.statusCode != 200) {
+            def.reject('?');
+        } else {
+            var json = JSON.parse(body);
+            def.resolve(json.body);
+        }
+    });
+    return def.promise;
+}
+
+var getTemperatureHistory = function() {
+    var beginDate = moment().startOf('day').add(-1, 'day').add(config.temperatureChartBeginDayTime);
+    var endDate = moment().startOf('day').add(-1, 'day').add(config.temperatureChartEndDateTime); 
+    var def = q.defer();
+    var data = {
+        form: {
+            device_id: config.netatmoDeviceId,
+            module_id: config.netatmoTemperatureModuleId,
             type: 'Temperature',
-            access_token: '52d42bfc1777599b298b456c|bce486435e378f26eb0a935cd8a557e4',
+            access_token: config.netatmoAccessToken,
+            date_begin: beginDate.format('X'),
+            date_end: endDate.format('X'),
+            scale: 'max'
+        }
+    };
+    request.post(config.netatmoHistoryUrl, data, function (error, response, body) {
+        if (error || response.statusCode != 200) {
+            def.reject('?');
+        } else {
+            var json = JSON.parse(body);
+            var history = [];
+            for (var i in json.body) {
+                var time = moment.unix(json.body[i].beg_time).add(1, 'day');
+                var stepTime = json.body[i].step_time;
+                for (var k in json.body[i].value) {
+                    history.push([parseInt(time.format('x')), json.body[i].value[k][0]]);
+                    time.add(stepTime, 'seconds');
+                }
+            }
+            def.resolve(history);
+        }
+    });
+    return def.promise;
+}
+
+var getCurrentTemperature = function() {
+    var def = q.defer();
+    var data = {
+        form: {
+            device_id: config.netatmoDeviceId,
+            module_id: config.netatmoTemperatureModuleId,
+            type: 'Temperature',
+            access_token: config.netatmoAccessToken,
             date_begin: moment().subtract(1, 'hour').format('X'),
             date_end: moment().format('X'),
             scale: 'max'
         }
     };
-    request.post("https://www.netatmo.com/api/getmeasure", data, function (error, response, body) {
+    request.post(config.netatmoHistoryUrl, data, function (error, response, body) {
         if (error || response.statusCode != 200) {
             def.reject('?');
         } else {
@@ -51,13 +113,22 @@ var getTemperature = function() {
 
 var generateVars = function () {
     var def = q.defer();
-
     q.all([
-        getTemperature()
-    ]).spread(function (temp) {
+        getCurrentTemperature(),
+        getForecast(),
+        getTemperatureHistory()
+    ]).spread(function (temp, forecast, tempHistory) {
+        var time = moment().format('L LT');
+        var chartBeginDate = moment().startOf('day').add(config.temperatureChartBeginDayTime);
+        var chartEndDate = moment().startOf('day').add(config.temperatureChartEndDateTime); 
         def.resolve({
-            'time': moment.tz('Europe/Berlin').format('D.MM.YYYY HH:mm'),
-            'temperature': temp
+            time: time,
+            temperature: temp,
+            temperatureHistory: tempHistory,
+            chartBeginDate: chartBeginDate,
+            chartEndDate: chartEndDate,
+            forecast: forecast,
+            config: config
         });
     }).done();
     
@@ -72,6 +143,9 @@ function compile(str, path) {
         .use(nib());
 }
 
+moment.tz.setDefault(config.defaultTimezone);
+moment.locale(config.defaultLanguage);
+app.locals.moment = moment;
 app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
 app.use(stylus.middleware(
@@ -80,7 +154,7 @@ app.use(stylus.middleware(
         compile: compile
     }
 ));
-app.set('port', (process.env.PORT || defaultPort));
+app.set('port', (process.env.PORT || config.defaultPort));
 app.use(express.static(__dirname + '/public'));
 
 app.get('/cover', function(request, response) {
@@ -97,9 +171,9 @@ app.get('/', function (request, response) {
                 .options({ imageMagick: true })
                 .type('GrayScale')
                 .bitdepth(8)
-                .write(filenames.pngdestination, function(err) {
+                .write('cover.png', function(err) {
                     if (err) return console.log(err);
-                    response.status(200).sendFile(path.join(__dirname, filenames.pngdestination));
+                    response.status(200).sendFile(path.join(__dirname, 'cover.png'));
                     fs.unlinkSync('converted.png');
                 });
         } else {
