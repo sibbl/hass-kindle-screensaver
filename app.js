@@ -14,18 +14,40 @@ var filenames = {
     'pngdestination': 'cover.png'
 }
 
-var generateVars = function () {
+var getTemperature = function() {
     var def = q.defer();
-    request("https://api.forecast.io/forecast/d382a86ed6a0677340258ab891d8097c/51.0211287,13.7511783", function (error, response, body) {
+    var data = {
+        form: {
+            device_id: '70:ee:50:06:94:30',
+            module_id: '02:00:00:05:df:ec',
+            type: 'Temperature',
+            access_token: '52d42bfc1777599b298b456c|bce486435e378f26eb0a935cd8a557e4',
+            date_begin: moment().subtract(1, 'hour').format('X'),
+            date_end: moment().format('X'),
+            scale: 'max'
+        }
+    };
+    request.post("https://www.netatmo.com/api/getmeasure", data, function (error, response, body) {
         if (error || response.statusCode != 200) {
-            def.reject('something bad happened');
+            def.reject('?');
         } else {
-            def.resolve({
-                'time': moment.tz('Europe/Berlin').format('D.MM.YYYY HH:mm'),
-                'temp': parseInt((JSON.parse(body).currently.temperature - 32) * 5 / 9)
-            });
+            var json = JSON.parse(body);
+            var temperature = json.body[json.body.length-1].value[json.body[json.body.length - 1].value.length-1][0];
+            def.resolve(temperature);
         }
     });
+    return def.promise;
+}
+
+var generateVars = function () {
+    var def = q.defer();
+
+    q.all([getTemperature()]).spread(function(temp) {
+        def.resolve({
+            'time': moment.tz('Europe/Berlin').format('D.MM.YYYY HH:mm'),
+            'temp': temp
+        });
+    }).done();
     
     return def.promise;
 }
