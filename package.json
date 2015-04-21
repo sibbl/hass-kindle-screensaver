@@ -13,9 +13,12 @@
   "dependencies": {
     "express": "^4.12.3",
     "gm": "^1.17.0",
+    "jade": "*",
     "moment-timezone": "^0.3.1",
+    "nib": "*",
     "q": "^1.2.0",
     "request": "^2.55.0",
-    "svgexport": "^0.2.4"
+    "stylus": "*",
+    "webshot": "^0.15.4"
   }
 }

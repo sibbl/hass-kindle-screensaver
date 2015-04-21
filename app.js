@@ -1,11 +1,13 @@
 ﻿var express = require('express'),
+    stylus = require('stylus'),
+    nib = require('nib'),
     q = require('q'),
     request = require('request'),
-    svgexport = require('svgexport'),
     fs = require('fs'),
     path = require('path'),
     gm = require('gm'),
-    moment = require('moment-timezone');
+    moment = require('moment-timezone'),
+    webshot = require('webshot');
 
 var defaultPort = 5000;
 
@@ -13,6 +15,14 @@ var filenames = {
     'svgsource': 'input.svg',
     'pngdestination': 'cover.png'
 }
+
+var renderOptions = {
+    screenSize: {
+        width: 600,
+        height: 800
+    },
+    defaultWhiteBackground: true
+};
 
 var getTemperature = function() {
     var def = q.defer();
@@ -42,10 +52,12 @@ var getTemperature = function() {
 var generateVars = function () {
     var def = q.defer();
 
-    q.all([getTemperature()]).spread(function(temp) {
+    q.all([
+        getTemperature()
+    ]).spread(function (temp) {
         def.resolve({
             'time': moment.tz('Europe/Berlin').format('D.MM.YYYY HH:mm'),
-            'temp': temp
+            'temperature': temp
         });
     }).done();
     
@@ -54,42 +66,45 @@ var generateVars = function () {
 
 var app = express();
 
+function compile(str, path) {
+    return stylus(str)
+        .set('filename', path)
+        .use(nib());
+}
+
+app.set('views', __dirname + '/views');
+app.set('view engine', 'jade');
+app.use(stylus.middleware(
+    {
+        src: __dirname + '/public',
+        compile: compile
+    }
+));
 app.set('port', (process.env.PORT || defaultPort));
 app.use(express.static(__dirname + '/public'));
 
-app.get('/', function(request, response) {
-    fs.readFile(filenames.svgsource, 'utf8', function(err, data) {
-        if (err) {
-            return console.log(err);
-        }
-        generateVars().then(function(replaceVars) {
-            var result = data;
-            for (var i in replaceVars) {
-                result = result.replace(new RegExp('%' + i + '%', 'g'), replaceVars[i]);
-            }
+app.get('/cover', function(request, response) {
+    generateVars().then(function(replaceVars) {
+        response.render('cover', replaceVars);
+    });
+});
 
-            fs.writeFile('input_filled.svg', result, 'utf8', function(err) {
-                if (err) return console.log(err);
-
-                svgexport.render({
-                    "input": "input_filled.svg",
-                    "output": "converted.png"
-                }, function(a) {
-                    if (a == 0) {
-                        gm('converted.png')
-                            .options({ imageMagick: true })
-                            .type('GrayScale')
-                            .bitdepth(8)
-                            .write(filenames.pngdestination, function(err) {
-                                if (err) return console.log(err);
-                                response.status(200).sendFile(path.join(__dirname, filenames.pngdestination));
-                                fs.unlinkSync('converted.png');
-                                fs.unlinkSync('input_filled.svg');
-                            });
-                    }
+app.get('/', function (request, response) {
+    var url = 'http://' + request.get('host') + '/cover';
+    webshot(url, 'converted.png', renderOptions, function(err) {
+        if (err == null) {
+            gm('converted.png')
+                .options({ imageMagick: true })
+                .type('GrayScale')
+                .bitdepth(8)
+                .write(filenames.pngdestination, function(err) {
+                    if (err) return console.log(err);
+                    response.status(200).sendFile(path.join(__dirname, filenames.pngdestination));
+                    fs.unlinkSync('converted.png');
                 });
-            });
-        });
+        } else {
+            response.status(500).write('an error occured...');
+        }
     });
 });
 

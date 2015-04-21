@@ -191,3 +191,4 @@ ModelManifest.xml
 # custom
 /.ntvs_analysis.dat
 /cover.png
+/public/*/*.css
