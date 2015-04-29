@@ -30,7 +30,7 @@ var renderOptions = {
     defaultWhiteBackground: true
 };
 
-var getForecast = function() {
+var getForecast = function () {
     var def = q.defer();
     var data = {
         form: {
@@ -51,9 +51,9 @@ var getForecast = function() {
     return def.promise;
 }
 
-var getTemperatureHistory = function() {
+var getTemperatureHistory = function () {
     var beginDate = moment().startOf('day').add(-1, 'day').add(config.temperatureChartBeginDayTime);
-    var endDate = moment().startOf('day').add(-1, 'day').add(config.temperatureChartEndDateTime); 
+    var endDate = moment().startOf('day').add(-1, 'day').add(config.temperatureChartEndDateTime);
     var def = q.defer();
     var data = {
         form: {
@@ -86,7 +86,7 @@ var getTemperatureHistory = function() {
     return def.promise;
 }
 
-var getCurrentTemperature = function() {
+var getCurrentTemperature = function () {
     var def = q.defer();
     var data = {
         form: {
@@ -104,7 +104,7 @@ var getCurrentTemperature = function() {
             def.reject('?');
         } else {
             var json = JSON.parse(body);
-            var temperature = json.body[json.body.length-1].value[json.body[json.body.length - 1].value.length-1][0];
+            var temperature = json.body[json.body.length - 1].value[json.body[json.body.length - 1].value.length - 1][0];
             def.resolve(temperature);
         }
     });
@@ -120,7 +120,7 @@ var generateVars = function () {
     ]).spread(function (temp, forecast, tempHistory) {
         var time = moment().format('L LT');
         var chartBeginDate = moment().startOf('day').add(config.temperatureChartBeginDayTime);
-        var chartEndDate = moment().startOf('day').add(config.temperatureChartEndDateTime); 
+        var chartEndDate = moment().startOf('day').add(config.temperatureChartEndDateTime);
         def.resolve({
             time: time,
             temperature: temp,
@@ -131,7 +131,7 @@ var generateVars = function () {
             config: config
         });
     }).done();
-    
+
     return def.promise;
 }
 
@@ -153,29 +153,29 @@ app.use(stylus.middleware(
         src: __dirname + '/public',
         compile: compile
     }
-));
-app.set('port', (process.env.PORT || config.defaultPort));
+    ));
+app.set('port',(process.env.PORT || config.defaultPort));
 app.use(express.static(__dirname + '/public'));
 
-app.get('/cover', function(request, response) {
-    generateVars().then(function(replaceVars) {
+app.get('/cover', function (request, response) {
+    generateVars().then(function (replaceVars) {
         response.render('cover', replaceVars);
     });
 });
 
 app.get('/', function (request, response) {
     var url = 'http://' + request.get('host') + '/cover';
-    webshot(url, 'converted.png', renderOptions, function(err) {
+    webshot(url, 'converted.png', renderOptions, function (err) {
         if (err == null) {
             gm('converted.png')
                 .options({ imageMagick: true })
                 .type('GrayScale')
                 .bitdepth(8)
-                .write('cover.png', function(err) {
-                    if (err) return console.log(err);
-                    response.status(200).sendFile(path.join(__dirname, 'cover.png'));
-                    fs.unlinkSync('converted.png');
-                });
+                .write('cover.png', function (err) {
+                if (err) return console.log(err);
+                response.status(200).sendFile(path.join(__dirname, 'cover.png'));
+                fs.unlinkSync('converted.png');
+            });
         } else {
             response.status(500).write('an error occured...');
         }
