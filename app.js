@@ -12,7 +12,7 @@
 var config = {
     defaultLanguage: 'de-DE',
     defaultTimezone: 'Europe/Berlin',
-    netatmoAccessToken: '52d42bfc1777599b298b456c|80c9cce141023c378bc478570ee6735a',
+    netatmoAccessToken: '52d42bfc1777599b298b456c|8886cc8bed04b8bd5d284708237d7583',
     netatmoDeviceId: '70:ee:50:03:93:60',
     netatmoTemperatureModuleId: '02:00:00:03:cf:dc',
     netatmoForecastUrl: 'https://www.netatmo.com/api/simplifiedfuturemeasure',
