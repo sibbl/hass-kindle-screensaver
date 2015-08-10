@@ -12,7 +12,8 @@
 var config = {
     defaultLanguage: 'de-DE',
     defaultTimezone: 'Europe/Berlin',
-    netatmoAccessToken: '52d42f05177759882c8b456a|c3861cfde0c3d5ad31a96c1227ee617b',
+    netatmoAccessTokenSource: 'https://www.netatmo.com/de-DE/weathermap',
+    netatmoAccessTokenRegex: /NA\.Api\.init\(["']([^"']*)["']/,
     netatmoDeviceId: '70:ee:50:03:93:60',
     netatmoTemperatureModuleId: '02:00:00:03:cf:dc',
     netatmoForecastUrl: 'https://www.netatmo.com/api/simplifiedfuturemeasure',
@@ -111,26 +112,47 @@ var getCurrentTemperature = function () {
     return def.promise;
 }
 
+var getNetatmoAccessToken = function() {
+    var def = q.defer();
+    request(config.netatmoAccessTokenSource, function(error, response, body) {
+        if (error || response.statusCode != 200) {
+            def.reject('why u no allow tokenless requests for public data');
+        } else {
+            var url = body.match(config.netatmoAccessTokenRegex);
+            if(url.length == 0) {
+                def.reject('why u no allow tokenless requests for public data');
+            }else{
+                def.resolve(url[1]);
+            }
+        }
+    });
+    return def.promise;
+}
+
 var generateVars = function () {
     var def = q.defer();
-    q.all([
-        getCurrentTemperature(),
-        getForecast(),
-        getTemperatureHistory()
-    ]).spread(function (temp, forecast, tempHistory) {
-        var time = moment().format('L LT');
-        var chartBeginDate = moment().startOf('day').add(config.temperatureChartBeginDayTime);
-        var chartEndDate = moment().startOf('day').add(config.temperatureChartEndDateTime);
-        def.resolve({
-            time: time,
-            temperature: temp,
-            temperatureHistory: tempHistory,
-            chartBeginDate: chartBeginDate,
-            chartEndDate: chartEndDate,
-            forecast: forecast,
-            config: config
-        });
-    }).done();
+
+    getNetatmoAccessToken().then(function(token) {
+        config.netatmoAccessToken = token;
+        q.all([
+            getCurrentTemperature(),
+            getForecast(),
+            getTemperatureHistory()
+        ]).spread(function (temp, forecast, tempHistory) {
+            var time = moment().format('L LT');
+            var chartBeginDate = moment().startOf('day').add(config.temperatureChartBeginDayTime);
+            var chartEndDate = moment().startOf('day').add(config.temperatureChartEndDateTime);
+            def.resolve({
+                time: time,
+                temperature: temp,
+                temperatureHistory: tempHistory,
+                chartBeginDate: chartBeginDate,
+                chartEndDate: chartEndDate,
+                forecast: forecast,
+                config: config
+            });
+        }).done();
+    })
 
     return def.promise;
 }
