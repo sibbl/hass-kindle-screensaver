@@ -12,12 +12,11 @@
 var config = {
     defaultLanguage: 'de-DE',
     defaultTimezone: 'Europe/Berlin',
-    netatmoAccessTokenSource: 'https://www.netatmo.com/de-DE/weathermap',
-    netatmoAccessTokenRegex: /NA\.Api\.init\(["']([^"']*)["']/,
     netatmoDeviceId: '70:ee:50:03:93:60',
     netatmoTemperatureModuleId: '02:00:00:03:cf:dc',
     netatmoForecastUrl: 'https://www.netatmo.com/api/simplifiedfuturemeasure',
     netatmoHistoryUrl: 'https://www.netatmo.com/api/getmeasure',
+    netatmoTokenFilePath: './token.txt',
     temperatureChartBeginDayTime: { hours: 2 },
     temperatureChartEndDateTime: { days: 1, hours: 5 },
     defaultPort: 5000
@@ -43,7 +42,7 @@ var getForecast = function () {
     };
     request.post(config.netatmoForecastUrl, data, function (error, response, body) {
         if (error || response.statusCode != 200) {
-            def.reject('?');
+            def.reject('error while loading forecast', error, response.body);
         } else {
             var json = JSON.parse(body);
             def.resolve(json.body);
@@ -114,16 +113,13 @@ var getCurrentTemperature = function () {
 
 var getNetatmoAccessToken = function() {
     var def = q.defer();
-    request(config.netatmoAccessTokenSource, function(error, response, body) {
-        if (error || response.statusCode != 200) {
-            def.reject('why u no allow tokenless requests for public data');
-        } else {
-            var url = body.match(config.netatmoAccessTokenRegex);
-            if(url.length == 0) {
-                def.reject('why u no allow tokenless requests for public data');
-            }else{
-                def.resolve(url[1]);
-            }
+
+    fs.readFile(config.netatmoTokenFilePath, 'utf8', function (err,data) {
+        if (err) {
+            console.log("error reading token file");
+            def.reject(err);
+        }else{
+            def.resolve(data);
         }
     });
     return def.promise;
@@ -158,6 +154,8 @@ var generateVars = function () {
 }
 
 var app = express();
+
+app.set('port', (process.env.PORT || config.defaultPort))
 
 function compile(str, path) {
     return stylus(str)
