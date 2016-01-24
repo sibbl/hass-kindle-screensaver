@@ -19,7 +19,6 @@ var config = {
     netatmoAuthCredentials: require('./oauthData.json'),
     netatmoTemperatureModuleId: '02:00:00:03:cf:dc',
     netatmoHistoryUrl: 'https://www.netatmo.com/api/getmeasure',
-    netatmoTokenFilePath: './token.txt',
     weatherProForecastUrl: 'http://windows.weatherpro.meteogroup.de/weatherpro/WeatherFeed.php?lid=18232916',
     temperatureChartBeginDayTime: { hours: 2 },
     temperatureChartEndDateTime: { days: 1, hours: 5 },
@@ -129,10 +128,10 @@ var getNetatmoAccessToken = function() {
         return tokenPromise;
     }
     var def = q.defer();
-
     var data = {
-        form: Object.assign(config.netatmoAuthCredentials, {grant_type:'password'})
+        form: config.netatmoAuthCredentials
     };
+    data.form.grant_type = 'password';
     request.post(config.netatmoAuthUrl, data, function (error, response, body) {
         if (error || response.statusCode != 200) {
             def.reject('error getting netatmo access token', error, response.body);
