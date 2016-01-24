@@ -200,12 +200,17 @@ app.use(express.static(__dirname + '/public'));
 
 app.get('/cover', function (request, response) {
     generateVars().then(function (replaceVars) {
+        var battery = (!isNaN(+request.query.battery)) ? Math.max(0, Math.min(+request.query.battery, 100)) : 100;
+        replaceVars.battery = battery;
+        if(battery < 10) {
+            //TODO: notify someone about something
+        }
         response.render('cover', replaceVars);
     });
 });
 
 app.get('/', function (request, response) {
-    var url = 'http://' + request.get('host') + '/cover';
+    var url = 'http://' + request.get('host') + '/cover?battery=' + request.query.battery;
     webshot(url, 'converted.png', renderOptions, function (err) {
         if (err == null) {
             gm('converted.png')
