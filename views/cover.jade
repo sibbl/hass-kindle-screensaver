@@ -15,7 +15,7 @@ html
         var historyData = new google.visualization.DataTable();
         historyData.addColumn('datetime', 'Time');
         historyData.addColumn('number', '°C History');
-        var forecastRows = !{JSON.stringify(forecast.forecastGraphs.temperature)};
+        var forecastRows = !{JSON.stringify(forecast)};
         var historyRows = !{JSON.stringify(temperatureHistory)};
         var startDate = !{chartBeginDate};
         var endDate = !{chartEndDate};
@@ -80,18 +80,3 @@ html
       span.unit °C
     div.time= time
     div#temp_chart
-    div.forecast
-        each day in forecast.forecastDays
-            div
-                div.day= moment.unix(day.day_ts).format('dd')
-                div.max_temp= day.max_temp
-                div.min_temp= day.min_temp
-                div.sunrise= moment.unix(day.sunrise).format('LT')
-                div.sunset= moment.unix(day.sunset).format('LT')
-                div.sunhours= day.sun
-                div.rain= day.rain
-                div.uv= day.uv
-                div.windgust= 48
-                div.windangle= 45
-                img.day(src='https://www.netatmo.com/img/my/app/weather_symbol/for#{day.weather_symbol_day}@2x.png')
-                img.night(src='https://www.netatmo.com/img/my/app/weather_symbol/for#{day.weather_symbol_night}@2x.png')

@@ -1,0 +1,6 @@
+{
+  "client_id": "YOUR NETATMO APP CLIENT ID",
+  "client_secret": "YOUR NETATMO APP CLIENT SECRET",
+  "username": "YOUR NETATMO USERNAME",
+  "password": "YOUR NETATMO PASSWORD"
+}

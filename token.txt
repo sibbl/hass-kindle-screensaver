@@ -1,1 +1,0 @@
-Add your Netatmo access token that you can see in the source of https://www.netatmo.com/weathermap in this file only.

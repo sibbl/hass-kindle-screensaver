@@ -7,20 +7,26 @@
     path = require('path'),
     gm = require('gm'),
     moment = require('moment-timezone'),
-    webshot = require('webshot');
+    webshot = require('webshot'),
+    xml2js = require('xml2js'),
+    xmlParser = new xml2js.Parser();
 
 var config = {
     defaultLanguage: 'de-DE',
     defaultTimezone: 'Europe/Berlin',
     netatmoDeviceId: '70:ee:50:03:93:60',
+    netatmoAuthUrl: 'https://api.netatmo.com/oauth2/token',
+    netatmoAuthCredentials: require('./oauthData.json'),
     netatmoTemperatureModuleId: '02:00:00:03:cf:dc',
-    netatmoForecastUrl: 'https://www.netatmo.com/api/simplifiedfuturemeasure',
     netatmoHistoryUrl: 'https://www.netatmo.com/api/getmeasure',
     netatmoTokenFilePath: './token.txt',
+    weatherProForecastUrl: 'http://windows.weatherpro.meteogroup.de/weatherpro/WeatherFeed.php?lid=18232916',
     temperatureChartBeginDayTime: { hours: 2 },
     temperatureChartEndDateTime: { days: 1, hours: 5 },
     defaultPort: 5000
 };
+
+var tokenPromise;
 
 var renderOptions = {
     screenSize: {
@@ -32,20 +38,23 @@ var renderOptions = {
 
 var getForecast = function () {
     var def = q.defer();
-    var data = {
-        form: {
-            device_id: config.netatmoDeviceId,
-            module_id: config.netatmoTemperatureModuleId,
-            access_token: config.netatmoAccessToken,
-            locale: config.defaultLanguage
-        }
-    };
-    request.post(config.netatmoForecastUrl, data, function (error, response, body) {
+    request(config.weatherProForecastUrl, function (error, response, body) {
         if (error || response.statusCode != 200) {
-            def.reject('error while loading forecast', error, response.body);
+            def.reject('error getting forecast', error, response.body);
         } else {
-            var json = JSON.parse(body);
-            def.resolve(json.body);
+            xmlParser.parseString(body, function(err, result) {
+                if(err) {
+                    def.reject("error parsing forecast xml", err);
+                }else{
+                    var result = result.WeatherServiceResponse.forecast[0].hours[0].hour.map(function(item) {
+                        return [
+                            moment(item['$'].time).unix(),
+                            +item['$'].tt
+                        ];
+                    });
+                    def.resolve(result);
+                }
+            });
         }
     });
     return def.promise;
@@ -55,100 +64,113 @@ var getTemperatureHistory = function () {
     var beginDate = moment().startOf('day').add(-1, 'day').add(config.temperatureChartBeginDayTime);
     var endDate = moment().startOf('day').add(-1, 'day').add(config.temperatureChartEndDateTime);
     var def = q.defer();
-    var data = {
-        form: {
-            device_id: config.netatmoDeviceId,
-            module_id: config.netatmoTemperatureModuleId,
-            type: 'Temperature',
-            access_token: config.netatmoAccessToken,
-            date_begin: beginDate.format('X'),
-            date_end: endDate.format('X'),
-            scale: 'max'
-        }
-    };
-    request.post(config.netatmoHistoryUrl, data, function (error, response, body) {
-        if (error || response.statusCode != 200) {
-            def.reject('?');
-        } else {
-            var json = JSON.parse(body);
-            var history = [];
-            for (var i in json.body) {
-                var time = moment.unix(json.body[i].beg_time).add(1, 'day');
-                var stepTime = json.body[i].step_time;
-                for (var k in json.body[i].value) {
-                    history.push([parseInt(time.format('x')), json.body[i].value[k][0]]);
-                    time.add(stepTime, 'seconds');
-                }
+    getNetatmoAccessToken().then(function(token) {
+        var data = {
+            form: {
+                device_id: config.netatmoDeviceId,
+                module_id: config.netatmoTemperatureModuleId,
+                type: 'Temperature',
+                access_token: token,
+                date_begin: beginDate.format('X'),
+                date_end: endDate.format('X'),
+                scale: 'max'
             }
-            def.resolve(history);
-        }
+        };
+        request.post(config.netatmoHistoryUrl, data, function (error, response, body) {
+            if (error || response.statusCode != 200) {
+                def.reject('error getting temp history', error, response.body);
+            } else {
+                var json = JSON.parse(body);
+                var history = [];
+                for (var i in json.body) {
+                    var time = moment.unix(json.body[i].beg_time).add(1, 'day');
+                    var stepTime = json.body[i].step_time;
+                    for (var k in json.body[i].value) {
+                        history.push([parseInt(time.format('x')), json.body[i].value[k][0]]);
+                        time.add(stepTime, 'seconds');
+                    }
+                }
+                def.resolve(history);
+            }
+        });
     });
     return def.promise;
 }
 
 var getCurrentTemperature = function () {
     var def = q.defer();
-    var data = {
-        form: {
-            device_id: config.netatmoDeviceId,
-            module_id: config.netatmoTemperatureModuleId,
-            type: 'Temperature',
-            access_token: config.netatmoAccessToken,
-            date_begin: moment().subtract(1, 'hour').format('X'),
-            date_end: moment().format('X'),
-            scale: 'max'
-        }
-    };
-    request.post(config.netatmoHistoryUrl, data, function (error, response, body) {
-        if (error || response.statusCode != 200) {
-            def.reject('?');
-        } else {
-            var json = JSON.parse(body);
-            var temperature = json.body[json.body.length - 1].value[json.body[json.body.length - 1].value.length - 1][0];
-            def.resolve(temperature);
-        }
+    getNetatmoAccessToken().then(function(token) {
+        var data = {
+            form: {
+                device_id: config.netatmoDeviceId,
+                module_id: config.netatmoTemperatureModuleId,
+                type: 'Temperature',
+                access_token: token,
+                date_begin: moment().subtract(1, 'hour').format('X'),
+                date_end: moment().format('X'),
+                scale: 'max'
+            }
+        };
+        request.post(config.netatmoHistoryUrl, data, function (error, response, body) {
+            if (error || response.statusCode != 200) {
+                def.reject('error getting current temp', error, response.body);
+            } else {
+                var json = JSON.parse(body);
+                var temperature = json.body[json.body.length - 1].value[json.body[json.body.length - 1].value.length - 1][0];
+                def.resolve(temperature);
+            }
+        });
     });
     return def.promise;
 }
 
 var getNetatmoAccessToken = function() {
+    if(tokenPromise != undefined) {
+        return tokenPromise;
+    }
     var def = q.defer();
 
-    fs.readFile(config.netatmoTokenFilePath, 'utf8', function (err,data) {
-        if (err) {
-            console.log("error reading token file");
-            def.reject(err);
-        }else{
-            def.resolve(data);
+    var data = {
+        form: Object.assign(config.netatmoAuthCredentials, {grant_type:'password'})
+    };
+    request.post(config.netatmoAuthUrl, data, function (error, response, body) {
+        if (error || response.statusCode != 200) {
+            def.reject('error getting netatmo access token', error, response.body);
+        } else {
+            var json = JSON.parse(body);
+            if(json != undefined && json.error != undefined) {
+                def.reject('error getting netatmo access token with message', json.error);
+            }else{
+                def.resolve(json.access_token);
+            }
         }
     });
-    return def.promise;
+
+    tokenPromise = def.promise;
+    return tokenPromise;
 }
 
 var generateVars = function () {
     var def = q.defer();
 
-    getNetatmoAccessToken().then(function(token) {
-        config.netatmoAccessToken = token;
-        q.all([
-            getCurrentTemperature(),
-            getForecast(),
-            getTemperatureHistory()
-        ]).spread(function (temp, forecast, tempHistory) {
-            var time = moment().format('L LT');
-            var chartBeginDate = moment().startOf('day').add(config.temperatureChartBeginDayTime);
-            var chartEndDate = moment().startOf('day').add(config.temperatureChartEndDateTime);
-            def.resolve({
-                time: time,
-                temperature: temp,
-                temperatureHistory: tempHistory,
-                chartBeginDate: chartBeginDate,
-                chartEndDate: chartEndDate,
-                forecast: forecast,
-                config: config
-            });
-        }).done();
-    })
+    q.all([
+        getCurrentTemperature(),
+        getForecast(),
+        getTemperatureHistory()
+    ]).spread(function (temp, forecast, tempHistory) {
+        var time = moment().format('L LT');
+        var chartBeginDate = moment().startOf('day').add(config.temperatureChartBeginDayTime);
+        var chartEndDate = moment().startOf('day').add(config.temperatureChartEndDateTime);
+        def.resolve({
+            time: time,
+            temperature: temp,
+            temperatureHistory: tempHistory,
+            chartBeginDate: chartBeginDate,
+            chartEndDate: chartEndDate,
+            forecast: forecast,
+            config: config
+        });
+    }).done();
 
     return def.promise;
 }
