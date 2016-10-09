@@ -14,12 +14,12 @@
 var config = {
     defaultLanguage: 'de-DE',
     defaultTimezone: 'Europe/Berlin',
-    netatmoDeviceId: '70:ee:50:03:93:60',
+    netatmoDeviceId: '70:ee:50:1e:0d:d8',
     netatmoAuthUrl: 'https://api.netatmo.com/oauth2/token',
     netatmoAuthCredentials: require('./oauthData.json'),
-    netatmoTemperatureModuleId: '02:00:00:03:cf:dc',
+    netatmoTemperatureModuleId: '02:00:00:1e:05:e0',
     netatmoHistoryUrl: 'https://www.netatmo.com/api/getmeasure',
-    weatherProForecastUrl: 'http://windows.weatherpro.meteogroup.de/weatherpro/WeatherFeed.php?lid=18232916',
+    weatherProForecastUrl: 'http://windows.weatherpro.meteogroup.de/weatherpro/WeatherFeed.php?lid=18228265',
     temperatureChartBeginDayTime: { hours: 2 },
     temperatureChartEndDateTime: { days: 1, hours: 5 },
     defaultPort: 5000
