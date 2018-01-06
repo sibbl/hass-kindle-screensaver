@@ -14,10 +14,10 @@
 var config = {
     defaultLanguage: 'de-DE',
     defaultTimezone: 'Europe/Berlin',
-    netatmoDeviceId: '70:ee:50:04:7c:ee',
+    netatmoDeviceId: '70:ee:50:2b:2c:cc',
     netatmoAuthUrl: 'https://api.netatmo.com/oauth2/token',
     netatmoAuthCredentials: require('./oauthData.json'),
-    netatmoTemperatureModuleId: '02:00:00:04:62:20',
+    netatmoTemperatureModuleId: '02:00:00:2b:21:64',
     netatmoHistoryUrl: 'https://www.netatmo.com/api/getmeasure',
     weatherProForecastUrl: 'http://windows.weatherpro.meteogroup.de/weatherpro/WeatherFeed.php?lid=18228265',
     temperatureChartBeginDayTime: { hours: 2 },
