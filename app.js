@@ -28,8 +28,8 @@ var config = {
         days: 1,
         hours: 5
     },
-    defaultPort: 5000,
-    hostname: "http://localhost:5000"
+    port: process.ENV.port || 5000,
+    server: process.ENV.server || "http://localhost:5000"
 };
 
 var tokenPromise;
@@ -184,7 +184,7 @@ var generateVars = function () {
 
 var app = express();
 
-app.set('port', (process.env.PORT || config.defaultPort))
+app.set('port', config.port);
 
 function compile(str, path) {
     return stylus(str)
@@ -215,10 +215,10 @@ app.get('/cover', function (request, response) {
     });
 });
 
-let battery = -1, host = null;
+let battery = -1;
 
 const createImage = () => {
-    var url = config.hostname + '/cover?battery=' + battery;
+    var url = config.server + '/cover?battery=' + battery;
     webshot(url, 'converted.png', renderOptions, function (err) {
         if (err == null) {
             gm('converted.png')
@@ -237,12 +237,11 @@ const createImage = () => {
 }
 createImage();
 
-const job = new CronJob({
+new CronJob({
     cronTime: "* * * * *",
     onTick: createImage,
     start: true
 });
-job.start();
 
 app.get('/', function (request, response) {
     battery = request.query.battery;
