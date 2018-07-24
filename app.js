@@ -184,8 +184,6 @@ var generateVars = function () {
 
 var app = express();
 
-app.set('port', (process.env.PORT || config.defaultPort));
-
 function compile(str, path) {
     return stylus(str)
         .set('filename', path)
@@ -201,7 +199,7 @@ app.use(stylus.middleware({
     src: __dirname + '/public',
     compile: compile
 }));
-app.set('port', (process.env.PORT || config.defaultPort));
+app.set('port', config.port);
 app.use(express.static(__dirname + '/public'));
 
 app.get('/cover', function (request, response) {
