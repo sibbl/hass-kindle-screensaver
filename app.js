@@ -28,8 +28,8 @@ var config = {
         days: 1,
         hours: 5
     },
-    port: process.env.port || 5000,
-    server: process.env.server || "http://localhost:5000"
+    port: process.env.PORT || 5000,
+    server: process.env.SERVER || "http://localhost:5000"
 };
 
 var tokenPromise;
