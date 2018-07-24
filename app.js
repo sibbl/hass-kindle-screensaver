@@ -9,7 +9,8 @@
     moment = require('moment-timezone'),
     webshot = require('webshot'),
     xml2js = require('xml2js'),
-    xmlParser = new xml2js.Parser();
+    xmlParser = new xml2js.Parser(),
+    CronJob = require('cron').CronJob;
 
 var config = {
     defaultLanguage: 'de-DE',
@@ -18,11 +19,17 @@ var config = {
     netatmoAuthUrl: 'https://api.netatmo.com/oauth2/token',
     netatmoAuthCredentials: require('./oauthData.json'),
     netatmoTemperatureModuleId: '02:00:00:2b:21:64',
-    netatmoHistoryUrl: 'https://www.netatmo.com/api/getmeasure',
+    netatmoHistoryUrl: 'https://app.netatmo.net/api/getmeasure',
     weatherProForecastUrl: 'http://windows.weatherpro.meteogroup.de/weatherpro/WeatherFeed.php?lid=18228265',
-    temperatureChartBeginDayTime: { hours: 2 },
-    temperatureChartEndDateTime: { days: 1, hours: 5 },
-    defaultPort: 5000
+    temperatureChartBeginDayTime: {
+        hours: 2
+    },
+    temperatureChartEndDateTime: {
+        days: 1,
+        hours: 5
+    },
+    defaultPort: 5000,
+    hostname: "http://localhost:5000"
 };
 
 var tokenPromise;
@@ -41,14 +48,13 @@ var getForecast = function () {
         if (error || response.statusCode != 200) {
             def.reject('error getting forecast', error, response.body);
         } else {
-            xmlParser.parseString(body, function(err, result) {
-                if(err) {
+            xmlParser.parseString(body, function (err, result) {
+                if (err) {
                     def.reject("error parsing forecast xml", err);
-                }else{
-                    var result = result.WeatherServiceResponse.forecast[0].hours[0].hour.map(function(item) {
+                } else {
+                    var result = result.WeatherServiceResponse.forecast[0].hours[0].hour.map(function (item) {
                         return [
-                            moment(item['$'].time).unix(),
-                            +item['$'].tt
+                            moment(item['$'].time).unix(), +item['$'].tt
                         ];
                     });
                     def.resolve(result);
@@ -63,7 +69,7 @@ var getTemperatureHistory = function () {
     var beginDate = moment().startOf('day').add(-1, 'day').add(config.temperatureChartBeginDayTime);
     var endDate = moment().startOf('day').add(-1, 'day').add(config.temperatureChartEndDateTime);
     var def = q.defer();
-    getNetatmoAccessToken().then(function(token) {
+    getNetatmoAccessToken().then(function (token) {
         var data = {
             form: {
                 device_id: config.netatmoDeviceId,
@@ -77,6 +83,7 @@ var getTemperatureHistory = function () {
         };
         request.post(config.netatmoHistoryUrl, data, function (error, response, body) {
             if (error || response.statusCode != 200) {
+                console.error("error getting temp history", error, response.body);
                 def.reject('error getting temp history', error, response.body);
             } else {
                 var json = JSON.parse(body);
@@ -98,7 +105,7 @@ var getTemperatureHistory = function () {
 
 var getCurrentTemperature = function () {
     var def = q.defer();
-    getNetatmoAccessToken().then(function(token) {
+    getNetatmoAccessToken().then(function (token) {
         var data = {
             form: {
                 device_id: config.netatmoDeviceId,
@@ -112,6 +119,7 @@ var getCurrentTemperature = function () {
         };
         request.post(config.netatmoHistoryUrl, data, function (error, response, body) {
             if (error || response.statusCode != 200) {
+                console.error("error getting current temp", error, response.body);
                 def.reject('error getting current temp', error, response.body);
             } else {
                 var json = JSON.parse(body);
@@ -123,8 +131,8 @@ var getCurrentTemperature = function () {
     return def.promise;
 }
 
-var getNetatmoAccessToken = function() {
-    if(tokenPromise != undefined) {
+var getNetatmoAccessToken = function () {
+    if (tokenPromise != undefined) {
         return tokenPromise;
     }
     var def = q.defer();
@@ -137,9 +145,9 @@ var getNetatmoAccessToken = function() {
             def.reject('error getting netatmo access token', error, response.body);
         } else {
             var json = JSON.parse(body);
-            if(json != undefined && json.error != undefined) {
+            if (json != undefined && json.error != undefined) {
                 def.reject('error getting netatmo access token with message', json.error);
-            }else{
+            } else {
                 def.resolve(json.access_token);
             }
         }
@@ -189,43 +197,56 @@ moment.locale(config.defaultLanguage);
 app.locals.moment = moment;
 app.set('views', __dirname + '/views');
 app.set('view engine', 'jade');
-app.use(stylus.middleware(
-    {
-        src: __dirname + '/public',
-        compile: compile
-    }
-    ));
-app.set('port',(process.env.PORT || config.defaultPort));
+app.use(stylus.middleware({
+    src: __dirname + '/public',
+    compile: compile
+}));
+app.set('port', (process.env.PORT || config.defaultPort));
 app.use(express.static(__dirname + '/public'));
 
 app.get('/cover', function (request, response) {
     generateVars().then(function (replaceVars) {
         var battery = (!isNaN(+request.query.battery)) ? Math.max(0, Math.min(+request.query.battery, 100)) : 100;
         replaceVars.battery = battery;
-        if(battery < 10) {
-            //TODO: notify someone about something
+        if (battery < 10) {
+            //TODO: notify someone about this!!!
         }
         response.render('cover', replaceVars);
     });
 });
 
-app.get('/', function (request, response) {
-    var url = 'http://' + request.get('host') + '/cover?battery=' + request.query.battery;
+let battery = -1, host = null;
+
+const createImage = () => {
+    var url = config.hostname + '/cover?battery=' + battery;
     webshot(url, 'converted.png', renderOptions, function (err) {
         if (err == null) {
             gm('converted.png')
-                .options({ imageMagick: true })
+                .options({
+                    imageMagick: true
+                })
                 .type('GrayScale')
                 .bitdepth(8)
                 .write('cover.png', function (err) {
-                if (err) return console.log(err);
-                response.status(200).sendFile(path.join(__dirname, 'cover.png'));
-                fs.unlinkSync('converted.png');
-            });
+                    if (err) return console.error(err);
+                });
         } else {
-            response.status(500).write('an error occured...');
+            console.error("Could not create image", err);
         }
     });
+}
+createImage();
+
+const job = new CronJob({
+    cronTime: "* * * * *",
+    onTick: createImage,
+    start: true
+});
+job.start();
+
+app.get('/', function (request, response) {
+    battery = request.query.battery;
+    response.status(200).sendFile(path.join(__dirname, 'cover.png'));
 });
 
 app.listen(app.get('port'), function () {
