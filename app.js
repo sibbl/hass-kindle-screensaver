@@ -28,8 +28,8 @@ var config = {
         days: 1,
         hours: 5
     },
-    port: process.ENV.port || 5000,
-    server: process.ENV.server || "http://localhost:5000"
+    port: process.env.port || 5000,
+    server: process.env.server || "http://localhost:5000"
 };
 
 var tokenPromise;
@@ -184,7 +184,7 @@ var generateVars = function () {
 
 var app = express();
 
-app.set('port', config.port);
+app.set('port', (process.env.PORT || config.defaultPort));
 
 function compile(str, path) {
     return stylus(str)
