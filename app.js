@@ -242,7 +242,9 @@ new CronJob({
 });
 
 app.get('/', function (request, response) {
-    battery = request.query.battery;
+    if(!isNaN(request.query.battery)) {
+        battery = request.query.battery;
+    }
     response.status(200).sendFile(path.join(__dirname, 'cover.png'));
 });
 
