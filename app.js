@@ -151,6 +151,10 @@ var getNetatmoAccessToken = function () {
                 def.resolve(json.access_token);
             }
         }
+        // reset every hour
+        setTimeout(() => {
+            tokenPromise = undefined;
+        }, 1000 * 60 * 60);
     });
 
     tokenPromise = def.promise;
