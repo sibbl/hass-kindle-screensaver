@@ -240,7 +240,7 @@ const createImage = () => {
 createImage();
 
 new CronJob({
-    cronTime: "* * * * *",
+    cronTime: "*/5 * * * *",
     onTick: createImage,
     start: true
 });
