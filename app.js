@@ -63,7 +63,10 @@ const getForecast = async () => {
     const xmlDoc = XML.parse(body);
 
     return xmlDoc.forecast.hours.hour.map(item => {
-        return [moment(item.time).unix(), +item.tt];
+        return {
+            time: moment(item.time).toDate(),
+            temperature: +item.tt
+        };
     });
 };
 
@@ -108,7 +111,10 @@ const getTemperatureHistory = async () => {
         var time = moment.unix(item.beg_time).add(1, "day");
         var stepTime = item.step_time;
         item.value.forEach(value => {
-            history.push([parseInt(time.format("x")), value[0]]);
+            history.push({
+                time: time.toDate(),
+                temperature: value[0]
+            });
             time.add(stepTime, "seconds");
         });
     });
@@ -190,9 +196,9 @@ const getNetatmoAccessToken = async () => {
 };
 
 const generateVars = async () => {
-    let temp, forecast, tempHistory;
+    let temperature, forecast, temperatureHistory;
     try {
-        [temp, forecast, tempHistory] = await Promise.all([
+        [temperature, forecast, temperatureHistory] = await Promise.all([
             getCurrentTemperature(),
             getForecast(),
             getTemperatureHistory()
@@ -201,21 +207,11 @@ const generateVars = async () => {
         console.error(`Failed to retrieve content: ${err}`);
         return false;
     }
-    const time = moment().format("L LT");
-    const chartBeginDate = moment()
-        .startOf("day")
-        .add(config.temperatureChartBeginDayTime);
-    const chartEndDate = moment()
-        .startOf("day")
-        .add(config.temperatureChartEndDateTime);
     return {
-        time: time,
-        temperature: temp,
-        temperatureHistory: tempHistory,
-        chartBeginDate: chartBeginDate,
-        chartEndDate: chartEndDate,
-        forecast: forecast,
-        config: config
+        timestamp: new Date(),
+        temperature,
+        temperatureHistory,
+        forecast
     };
 };
 
@@ -227,11 +223,9 @@ const compile = (str, filename) => {
         .use(nib());
 }
 
-moment.tz.setDefault(config.defaultTimezone);
-moment.locale(config.defaultLanguage);
-app.locals.moment = moment;
 app.set("views", __dirname + "/views");
-app.set("view engine", "jade");
+app.set('view engine', 'jsx');
+app.engine('jsx', require('express-react-views').createEngine());
 app.use(
     stylus.middleware({
         src: __dirname + "/public",
@@ -257,13 +251,16 @@ app.get("/cover", async (request, response) => {
     const battery = !isNaN(+request.query.battery)
         ? Math.max(0, Math.min(+request.query.battery, 100))
         : 100;
-    renderParams.battery = battery;
 
     if (battery < 10) {
         //TODO: notify someone about this!
     }
 
-    response.render("cover", renderParams);
+    response.render("cover", {
+        ...renderParams,
+        battery,
+        config
+    });
 });
 
 let battery = -1;
@@ -300,6 +297,7 @@ app.get("/", (request, response) => {
     }
     response.status(200).sendFile(path.join(__dirname, "cover.png"));
 });
+
 
 app.listen(app.get("port"), () => {
     console.log("Node app is running at localhost:" + app.get("port"));
