@@ -118,7 +118,7 @@ class Cover extends React.Component {
 
                         <ReferenceLine y={0} stroke="#000" />
                     </ComposedChart>
-                    <div className="battery" style={{ style: battery + "%" }} />
+                    <div className="battery" style={{ width: battery + "%" }} />
                 </body>
             </html>
         );
