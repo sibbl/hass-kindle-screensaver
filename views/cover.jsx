@@ -7,6 +7,7 @@ const {
     YAxis,
     Area,
     CartesianGrid,
+    ReferenceLine,
     Line
 } = require("recharts");
 
@@ -42,10 +43,18 @@ class Cover extends React.Component {
         }
 
         const minForecastTemperature = Math.min(
-            ...forecast.map(x => x.temperature)
+            ...forecast
+                .filter(
+                    ({ time }) => time >= chartBeginDate && time <= chartEndDate
+                )
+                .map(x => x.temperature)
         );
         const minHistoricTemperature = Math.min(
-            ...temperatureHistory.map(x => x.temperature)
+            ...temperatureHistory
+                .filter(
+                    ({ time }) => time >= chartBeginDate && time <= chartEndDate
+                )
+                .map(x => x.temperature)
         );
         const minTemperature = Math.floor(
             Math.min(0, minForecastTemperature - 1, minHistoricTemperature - 1)
@@ -67,7 +76,7 @@ class Cover extends React.Component {
                         className="chart"
                         width={600}
                         height={350}
-                        margin={{ top: 10, left: 10, right: 10, bottom: 10 }}
+                        margin={{ top: 10, left: 10, right: 20, bottom: 10 }}
                     >
                         <XAxis
                             type="number"
@@ -80,7 +89,10 @@ class Cover extends React.Component {
                         />
                         <YAxis
                             dataKey="temperature"
-                            domain={[minTemperature, "auot"]}
+                            domain={[
+                                () => minTemperature,
+                                dataMax => Math.ceil(dataMax)
+                            ]}
                             tickFormatter={val => `${val} °C`}
                         />
                         <CartesianGrid stroke="#f5f5f5" />
@@ -103,6 +115,8 @@ class Cover extends React.Component {
                             stroke="#000"
                             strokeWidth={3}
                         />
+
+                        <ReferenceLine y={0} stroke="#000" />
                     </ComposedChart>
                     <div className="battery" style={{ style: battery + "%" }} />
                 </body>
