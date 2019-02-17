@@ -1,6 +1,6 @@
 module.exports = {
-    timezone: "Europe/Berlin",
-    language: "de-DE",
+    timezone: process.env.MOMENT_TIMEZONE || "Europe/London",
+    language: process.env.MOMENT_LANGUAGE || "en-US",
     homeassistant: {
         host: process.env.HA_HOST,
         port: process.env.HA_PORT,
@@ -9,8 +9,8 @@ module.exports = {
         ignoreCert: process.env.HA_IGNORE_CERT === true
     },
     entities: {
-        temperature: "sensor.netatmo_outdoor_temperature",
-        weather: "weather.openweathermap"
+        temperature: process.env.HA_ENTITY_TEMPERATURE,
+        weather: process.env.HA_ENTITY_WEATHER
     },
     rendering: {
         screenSize: {
