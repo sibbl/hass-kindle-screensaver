@@ -1,26 +1,37 @@
 global-reset()
 
+html, body 
+  margin 0
+  padding 0
+  height 100%
 body
   background #fff
   font-family Arial, sans-serif
   font-size 20px
+  position relative
 
 .temperature
   text-align center
   font-size 10em
-  margin-top 50px
+  padding 50px 0 20px 0
   .unit
     font-size .3em
     position relative
     top -1.6em
     color #666
 .time
+  text-align center
   position absolute
-  bottom 0
+  bottom 350px
+  left 0
   right 0
-  padding 10px
-.chart
-  margin 20px 0
+  color #666
+  font-size 16px
+.chart 
+  position absolute !important
+  bottom 0
+  left 0
+  right 0
 .battery
   display block
   height 6px
@@ -29,3 +40,5 @@ body
   bottom 0
   left 0
   width 100%
+.recharts-cartesian-axis-tick
+  font-size 12px

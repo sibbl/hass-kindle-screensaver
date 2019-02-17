@@ -1,217 +1,101 @@
 ﻿const express = require("express"),
     stylus = require("stylus"),
     nib = require("nib"),
-    fetch = require("node-fetch"),
     path = require("path"),
     gm = require("gm"),
-    moment = require("moment-timezone"),
+    moment = require("moment"),
     webshot = require("webshot"),
-    XML = require("pixl-xml"),
     CronJob = require("cron").CronJob,
-    { URLSearchParams } = require("url");
+    config = require("./config.js"),
+    homeassistant = require("homeassistant"),
+    hass = new homeassistant(config.homeassistant),
+    { cropTimeseriesArray } = require("./utils");
 
-const config = {
-    defaultLanguage: "de-DE",
-    defaultTimezone: "Europe/Berlin",
-    netatmoDeviceId: "70:ee:50:2b:2c:cc",
-    netatmoAuthUrl: "https://api.netatmo.com/oauth2/token",
-    netatmoAuthCredentials: require("./oauthData.json"),
-    netatmoTemperatureModuleId: "02:00:00:2b:21:64",
-    netatmoHistoryUrl: "https://app.netatmo.net/api/getmeasure",
-    weatherProForecastUrl:
-        "http://windows.weatherpro.meteogroup.de/weatherpro/WeatherFeed.php?lid=18228265",
-    temperatureChartBeginDayTime: {
-        hours: 2
-    },
-    temperatureChartEndDateTime: {
-        days: 1,
-        hours: 5
-    },
-    port: process.env.PORT || 5000,
-    server: process.env.SERVER || "http://localhost:5000"
-};
-
-var tokenPromise;
-
-var renderOptions = {
-    screenSize: {
-        width: 600,
-        height: 800
-    },
-    defaultWhiteBackground: true
-};
-
-const getFormData = jsonObject => {
-    return Object.entries(jsonObject).reduce((params, [key, value]) => {
-        params.append(key, value);
-        return params;
-    }, new URLSearchParams());
-};
-
-const getForecast = async () => {
-    const response = await fetch(config.weatherProForecastUrl);
-    if (response.status != 200) {
-        const body = await response.text();
-        throw new Error(
-            `Error getting forecast: ${response.status} ${
-                response.statusText
-            }: ${body}`
-        );
-    }
-    const body = await response.text();
-
-    const xmlDoc = XML.parse(body);
-
-    return xmlDoc.forecast.hours.hour.map(item => {
-        return {
-            time: moment(item.time).toDate(),
-            temperature: +item.tt
-        };
-    });
-};
-
-const getTemperatureHistory = async () => {
-    var beginDate = moment()
-        .startOf("day")
-        .add(-1, "day")
-        .add(config.temperatureChartBeginDayTime);
-    var endDate = moment()
-        .startOf("day")
-        .add(-1, "day")
-        .add(config.temperatureChartEndDateTime);
-
-    const token = await getNetatmoAccessToken();
-    const formData = getFormData({
-        device_id: config.netatmoDeviceId,
-        module_id: config.netatmoTemperatureModuleId,
-        type: "Temperature",
-        access_token: token,
-        date_begin: beginDate.format("X"),
-        date_end: endDate.format("X"),
-        scale: "max"
-    });
-
-    const response = await fetch(config.netatmoHistoryUrl, {
-        method: "POST",
-        body: formData
-    });
-    if (response.status != 200) {
-        const body = await response.text();
-        throw new Error(
-            `Error getting temperature history: ${response.status} ${
-                response.statusText
-            }: ${body}`
-        );
-    }
-    const json = await response.json();
-
-    const history = [];
-
-    json.body.forEach(item => {
-        var time = moment.unix(item.beg_time).add(1, "day");
-        var stepTime = item.step_time;
-        item.value.forEach(value => {
-            history.push({
-                time: time.toDate(),
-                temperature: value[0]
-            });
-            time.add(stepTime, "seconds");
-        });
-    });
-
-    return history;
-};
-
-const getCurrentTemperature = async () => {
-    const token = await getNetatmoAccessToken();
-
-    const formData = getFormData({
-        device_id: config.netatmoDeviceId,
-        module_id: config.netatmoTemperatureModuleId,
-        type: "Temperature",
-        access_token: token,
-        date_begin: moment()
-            .subtract(1, "hour")
-            .format("X"),
-        date_end: moment().format("X"),
-        scale: "max"
-    });
-
-    const response = await fetch(config.netatmoHistoryUrl, {
-        method: "POST",
-        body: formData
-    });
-    if (response.status != 200) {
-        const body = await response.text();
-        throw new Error(
-            `Error getting current temperature: ${response.status} ${
-                response.statusText
-            }: ${body}`
-        );
-    }
-
-    const json = await response.json();
-    return json.body[json.body.length - 1].value[
-        json.body[json.body.length - 1].value.length - 1
-    ][0];
-};
-
-const getNetatmoAccessToken = async () => {
-    if (tokenPromise !== undefined) {
-        return tokenPromise;
-    }
-
-    const formData = getFormData({
-        ...config.netatmoAuthCredentials,
-        grant_type: "password"
-    });
-
-    const response = await fetch(config.netatmoAuthUrl, {
-        method: "POST",
-        body: formData
-    });
-
-    if (response.status != 200) {
-        const body = await response.text();
-        throw new Error(
-            `Error getting netatmo access token: ${response.status} ${
-                response.statusText
-            }: ${body}`
-        );
-    }
-
-    const json = await response.json();
-
-    if (json != undefined && json.error != undefined) {
-        throw new Error(
-            "Error getting netatmo access token with message: " + json.error
-        );
-    }
-
-    // reset every hour
-    setTimeout(() => {
-        tokenPromise = undefined;
-    }, 1000 * 60 * 60);
-    return json.access_token;
-};
+const HASS_ISO_STRING_FORMAT = "YYYY-MM-DDTHH:mm:ssZ";
 
 const generateVars = async () => {
-    let temperature, forecast, temperatureHistory;
+    moment.tz.setDefault(config.timezone);
+    moment.locale(config.language);
+
+    const now = moment();
+    const chartBeginDate = now.clone().add(-12, "hours");
+    const yesterdayDate = now.clone().add(-24, "hours");
+    const chartEndDate = now.clone().add(12, "hours");
+
+    let temperature,
+        weather = [],
+        temperatureHistory = [],
+        temperatureHistoryToday = [],
+        temperatureHistoryYesterday = [];
     try {
-        [temperature, forecast, temperatureHistory] = await Promise.all([
-            getCurrentTemperature(),
-            getForecast(),
-            getTemperatureHistory()
+        const [
+            temperatureRaw,
+            temperatureHistoryRaw,
+            weatherHistoryRaw
+        ] = await Promise.all([
+            hass.states.get(...config.entities.temperature.split(".")),
+            hass.history.state(
+                yesterdayDate.format(HASS_ISO_STRING_FORMAT),
+                config.entities.temperature,
+                now.format(HASS_ISO_STRING_FORMAT)
+            ),
+            hass.history.state(
+                yesterdayDate.format(HASS_ISO_STRING_FORMAT),
+                config.entities.weather,
+                now.format(HASS_ISO_STRING_FORMAT)
+            )
         ]);
-    }catch(err) {
+        temperature = temperatureRaw;
+
+        temperatureHistory = temperatureHistoryRaw[0].map(event => {
+            return {
+                time: moment(event.last_updated),
+                value: parseFloat(event.state)
+            };
+        });
+
+        temperatureHistoryToday = cropTimeseriesArray(
+            temperatureHistory,
+            chartBeginDate,
+            now
+        );
+
+        temperatureHistoryYesterday = cropTimeseriesArray(
+            temperatureHistory,
+            yesterdayDate,
+            chartBeginDate
+        ).map(x => {
+            x.time = x.time.add(24, "hours");
+            return x;
+        });
+
+        const lastWeatherEvent =
+            weatherHistoryRaw[0][weatherHistoryRaw[0].length - 1];
+        // interestingly, the weather forecast attribute also includes the history...
+        weather = lastWeatherEvent.attributes.forecast.map(
+            ({ datetime, temperature }) => {
+                return {
+                    time: moment(datetime),
+                    value: temperature
+                };
+            }
+        );
+    } catch (err) {
         console.error(`Failed to retrieve content: ${err}`);
         return false;
     }
+
     return {
         timestamp: new Date(),
         temperature,
-        temperatureHistory,
-        forecast
+        temperatureHistory: temperatureHistory.filter(
+            ({ time }) => time >= yesterdayDate && time < chartEndDate
+        ),
+        temperatureHistoryToday,
+        temperatureHistoryYesterday,
+        weather,
+        now,
+        chartRange: [chartBeginDate, chartEndDate]
     };
 };
 
@@ -221,11 +105,11 @@ const compile = (str, filename) => {
     return stylus(str)
         .set("filename", filename)
         .use(nib());
-}
+};
 
 app.set("views", __dirname + "/views");
-app.set('view engine', 'jsx');
-app.engine('jsx', require('express-react-views').createEngine());
+app.set("view engine", "jsx");
+app.engine("jsx", require("express-react-views").createEngine());
 app.use(
     stylus.middleware({
         src: __dirname + "/public",
@@ -267,7 +151,7 @@ let battery = -1;
 
 const createImage = () => {
     const url = `${config.server}/cover?battery=${battery}`;
-    webshot(url, "converted.png", renderOptions, (err) => {
+    webshot(url, "converted.png", config.rendering, err => {
         if (err == null) {
             gm("converted.png")
                 .options({
@@ -297,7 +181,6 @@ app.get("/", (request, response) => {
     }
     response.status(200).sendFile(path.join(__dirname, "cover.png"));
 });
-
 
 app.listen(app.get("port"), () => {
     console.log("Node app is running at localhost:" + app.get("port"));

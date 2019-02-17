@@ -11,7 +11,7 @@
 			// Workspace relative or absolute path to the program.
 			"program": "app.js",
 			// Automatically stop program after launch.
-			"stopOnEntry": false,
+			"stopOnEntry": true,
 			// Command line arguments passed to the program.
 			"args": [],
 			// Workspace relative or absolute path to the working directory of the program being debugged. Default is the current workspace.
@@ -19,15 +19,10 @@
 			// Workspace relative or absolute path to the runtime executable to be used. Default is the runtime executable on the PATH.
 			"runtimeExecutable": null,
 			// Environment variables passed to the program.
-			"env": { }
-		}, 
-		{
-			"name": "Attach",
-			"type": "node",
-			// TCP/IP address. Default is "localhost".
-			"address": "localhost",
-			// Port to attach to.
-			"port": 5858
-		}
+			"env": { 
+				"HA_HOST": "https://home.sibbl.net",
+				"HA_PORT": 443
+			}
+		},
 	]
 }

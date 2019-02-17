@@ -11,54 +11,63 @@ const {
     Line
 } = require("recharts");
 
+const getDomain = (...arrays) => {
+    const min = Math.min(...arrays.map(arr => Math.min(...arr)));
+    const max = Math.max(...arrays.map(arr => Math.max(...arr)));
+    return [min, max];
+    
+}
+
 class Cover extends React.Component {
     render() {
         const {
             config,
-            forecast,
+            weather,
             temperatureHistory,
+            temperatureHistoryToday,
+            temperatureHistoryYesterday,
             battery,
             temperature,
-            timestamp
+            timestamp,
+            chartRange,
+            now
         } = this.props;
 
+        moment.tz.setDefault(config.timezone);
+        moment.locale(config.language);
         const time = moment(timestamp).format("L LT");
-        moment.tz.setDefault(config.defaultTimezone);
-        moment.locale(config.defaultLanguage);
 
-        const chartBeginDate = moment()
-            .startOf("day")
-            .add(config.temperatureChartBeginDayTime)
-            .toDate();
-        const chartEndDate = moment()
-            .startOf("day")
-            .add(config.temperatureChartEndDateTime)
-            .toDate();
+        const ticks = [chartRange[0].toDate()];
+        let tickDate = moment(chartRange[0]);
 
-        const ticks = [];
-        let tickDate = moment(chartBeginDate);
-        while (tickDate < chartEndDate) {
-            tickDate = tickDate.add(6, "hours");
+        while (tickDate < chartRange[1]) {
+            tickDate = tickDate.add(4, "hours");
             ticks.push(tickDate.toDate());
         }
+        ticks.pop();
+        ticks.shift();
 
-        const minForecastTemperature = Math.min(
-            ...forecast
-                .filter(
-                    ({ time }) => time >= chartBeginDate && time <= chartEndDate
-                )
-                .map(x => x.temperature)
-        );
-        const minHistoricTemperature = Math.min(
-            ...temperatureHistory
-                .filter(
-                    ({ time }) => time >= chartBeginDate && time <= chartEndDate
-                )
-                .map(x => x.temperature)
-        );
-        const minTemperature = Math.floor(
-            Math.min(0, minForecastTemperature - 1, minHistoricTemperature - 1)
-        );
+        let [minTemperature, maxTemperature] = getDomain([...weather.map(x => x.value)], [...temperatureHistory.map(x => x.value)]);
+        minTemperature = Math.min(0, minTemperature);
+
+        let temperatureTicks = [minTemperature - (minTemperature % 5)];
+        while (temperatureTicks[temperatureTicks.length - 1] < maxTemperature) {
+            temperatureTicks.push(temperatureTicks[temperatureTicks.length - 1] + 5);
+        }
+        temperatureTicks = temperatureTicks.filter(x => x !== 0);
+
+        const formatXaxisTick = (time) => {
+            const diff = moment(time).diff(now, "hours");
+            if(diff === 0) {
+                return "";
+            }
+            let result = "";
+            if(diff > 0) {
+                result = "+";
+            }
+            result += `${diff}h`;
+            return result;
+        }
 
         return (
             <html>
@@ -68,39 +77,33 @@ class Cover extends React.Component {
 
                 <body>
                     <div className="temperature">
-                        <span>{temperature}</span>
-                        <span className="unit">°C</span>
+                        <span>{temperature.state}</span>
+                        <span className="unit">{temperature.attributes.unit_of_measurement}</span>
                     </div>
                     <div className="time">{time}</div>
                     <ComposedChart
                         className="chart"
                         width={600}
                         height={350}
-                        margin={{ top: 10, left: 10, right: 20, bottom: 10 }}
+                        margin={{ top: 10, left: 0, right: 0, bottom: 0 }}
                     >
-                        <XAxis
-                            type="number"
-                            dataKey="time"
-                            domain={[+chartBeginDate, +chartEndDate]}
-                            ticks={ticks}
-                            scale="time"
-                            allowDataOverflow={true}
-                            tickFormatter={time => moment(time).format("HH:mm")}
-                        />
-                        <YAxis
-                            dataKey="temperature"
-                            domain={[
-                                () => minTemperature,
-                                dataMax => Math.ceil(dataMax)
-                            ]}
-                            tickFormatter={val => `${val} °C`}
-                        />
                         <CartesianGrid stroke="#f5f5f5" />
                         <Area
                             type="monotone"
-                            dataKey="temperature"
-                            data={temperatureHistory.map(x => {
-                                x.temperature = [minTemperature, x.temperature];
+                            dataKey="value"
+                            data={[...temperatureHistoryYesterday].map(x => {
+                                x.value = [minTemperature, x.value];
+                                return x;
+                            })}
+                            domain={[-500, "auto"]}
+                            fill="rgba(128,128,128,0.3)"
+                            stroke={null}
+                        />
+                        <Area
+                            type="monotone"
+                            dataKey="value"
+                            data={[...temperatureHistoryToday].map(x => {
+                                x.value = [minTemperature, x.value];
                                 return x;
                             })}
                             domain={[-500, "auto"]}
@@ -109,14 +112,37 @@ class Cover extends React.Component {
                         />
                         <Line
                             type="monotone"
-                            dataKey="temperature"
-                            data={forecast}
+                            dataKey="value"
+                            data={weather}
                             dot={false}
                             stroke="#000"
                             strokeWidth={3}
                         />
+                        <XAxis
+                            type="number"
+                            dataKey="time"
+                            domain={[+chartRange[0], +chartRange[1]]}
+                            ticks={ticks}
+                            scale="time"
+                            mirror={true}
+                            axisLine={false}
+                            allowDataOverflow={true}
+                            tickFormatter={formatXaxisTick}
+                        />
+                        <YAxis
+                            dataKey="value"
+                            mirror={true}
+                            axisLine={false}
+                            ticks={temperatureTicks}
+                            domain={[
+                                () => minTemperature,
+                                () => maxTemperature
+                            ]}
+                            tickFormatter={val => `${val} °C`}
+                        />
 
                         <ReferenceLine y={0} stroke="#000" />
+                        <ReferenceLine x={+now.toDate()} stroke="#333" />
                     </ComposedChart>
                     <div className="battery" style={{ width: battery + "%" }} />
                 </body>
