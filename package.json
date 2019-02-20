@@ -1,7 +1,8 @@
 {
-  "name": "KindlePic",
-  "version": "0.0.0",
-  "description": "KindlePic",
+  "name": "kindle-dynamic-screensaver",
+  "version": "1.0.0",
+  "description": "kindle-dynamic-screensaver",
+  "license": "MIT",
   "main": "app.js",
   "author": {
     "name": "Sebastian",

@@ -189,7 +189,6 @@ _Pvt_Extensions/
 ModelManifest.xml
 
 # custom
-/.ntvs_analysis.dat
 /converted.png
 /cover.png
 /public/*/*.css
