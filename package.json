@@ -1,7 +1,8 @@
 {
-  "name": "KindlePic",
-  "version": "0.0.0",
-  "description": "KindlePic",
+  "name": "kindle-dynamic-screensaver",
+  "version": "1.0.0",
+  "description": "kindle-dynamic-screensaver",
+  "license": "MIT",
   "main": "app.js",
   "author": {
     "name": "Sebastian",
@@ -13,12 +14,14 @@
   "dependencies": {
     "cron": "^1.6.0",
     "express": "^4.16.4",
+    "express-react-views": "^0.11.0",
     "gm": "^1.23.1",
-    "jade": "^1.11.0",
+    "homeassistant": "^0.2.0",
     "moment-timezone": "^0.5.23",
     "nib": "^1.1.2",
-    "node-fetch": "^2.3.0",
-    "pixl-xml": "^1.0.13",
+    "react": "^16.8.1",
+    "react-dom": "^16.8.1",
+    "recharts": "^1.4.2",
     "stylus": "^0.54.5",
     "webshot": "^0.18.0"
   }
