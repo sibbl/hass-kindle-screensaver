@@ -5,8 +5,8 @@
   "license": "MIT",
   "main": "app.js",
   "author": {
-    "name": "Sebastian",
-    "email": ""
+    "name": "sibbl",
+    "email": "hello@sibbl.net"
   },
   "scripts": {
     "start": "node app.js"

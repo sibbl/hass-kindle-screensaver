@@ -1,7 +1,8 @@
 const webshot = require("webshot"),
-    gm = require("gm");
+    gm = require("gm"),
+    config = require("../config");
 
-const createImage = (config, battery) => {
+const createImage = (battery) => {
     const url = `${config.server}/cover?battery=${battery}`;
     webshot(url, "converted.png", config.rendering, err => {
         if (err == null) {

@@ -30,11 +30,11 @@ app.use(express.static(__dirname + "/public"));
 app.get("/cover", render);
 
 let battery = -1;
-createImage(config, battery);
+createImage(battery);
 
 new CronJob({
     cronTime: "* * * * *",
-    onTick: () => createImage(config, battery),
+    onTick: () => createImage(battery),
     start: true
 });
 
