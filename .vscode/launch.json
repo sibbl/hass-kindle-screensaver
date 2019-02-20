@@ -1,0 +1,23 @@
+{
+    // Verwendet IntelliSense zum Ermitteln möglicher Attribute.
+    // Zeigen Sie auf vorhandene Attribute, um die zugehörigen Beschreibungen anzuzeigen.
+    // Weitere Informationen finden Sie unter https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Program",
+            "program": "${workspaceFolder}\\app.js",
+            "env": {
+				"HA_HOST": "http://localhost",
+                "HA_PORT": 8123,
+                "HA_TOKEN": "<your HA token>",
+                "HA_ENTITY_TEMPERATURE": "sensor.outdoor_temperature",
+                "HA_ENTITY_WEATHER": "weather.openweathermap",
+                "MOMENT_TIMEZONE": "Europe/London",
+                "MOMENT_LANGUAGE": "en-US"
+            }
+        }
+    ]
+}
