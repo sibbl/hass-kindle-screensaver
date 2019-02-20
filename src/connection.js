@@ -40,12 +40,14 @@ const fetchData = async () => {
         ]);
         temperature = temperatureRaw;
 
-        temperatureHistory = temperatureHistoryRaw[0].map(event => {
-            return {
-                time: moment(event.last_updated),
-                value: parseFloat(event.state)
-            };
-        });
+        temperatureHistory = temperatureHistoryRaw[0].map(
+            ({ last_updated, state }) => {
+                return {
+                    time: moment(last_updated),
+                    value: parseFloat(state)
+                };
+            }
+        );
 
         temperatureHistoryToday = cropTimeseriesArray(
             temperatureHistory,
@@ -62,11 +64,17 @@ const fetchData = async () => {
             return x;
         });
 
+        const weatherHistory = weatherHistoryRaw[0].map(
+            ({ attributes: { temperature }, last_updated }) => ({
+                time: moment(last_updated),
+                value: parseFloat(temperature)
+            })
+        );
+
         const lastWeatherEvent =
             weatherHistoryRaw[0][weatherHistoryRaw[0].length - 1];
 
-        // interestingly, the weather forecast attribute also includes the history...
-        weather = lastWeatherEvent.attributes.forecast.map(
+        const weatherForecast = lastWeatherEvent.attributes.forecast.map(
             ({ datetime, temperature }) => {
                 return {
                     time: moment(datetime),
@@ -74,6 +82,8 @@ const fetchData = async () => {
                 };
             }
         );
+
+        weather = weatherHistory.concat(weatherForecast);
     } catch (err) {
         console.error(`Failed to retrieve content: ${err}`);
         return false;
