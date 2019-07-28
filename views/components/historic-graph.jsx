@@ -12,10 +12,9 @@ import {
 } from "recharts";
 
 const getDomain = (...arrays) => {
-    const min = Math.min(...arrays.map(arr => Math.min(...arr)));
-    const max = Math.max(...arrays.map(arr => Math.max(...arr)));
-    return [min, max];
-    
+    const min = Math.min(...arrays.map(arr => Math.min(...arr)).filter(o => o));
+    const max = Math.max(...arrays.map(arr => Math.max(...arr)).filter(o => o));
+    return [min, max]; 
 }
 
 const HistoricGraph = ({
