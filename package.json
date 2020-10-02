@@ -12,17 +12,17 @@
     "start": "node app.js"
   },
   "dependencies": {
-    "cron": "^1.7.1",
+    "cron": "^1.8.2",
     "express": "^4.17.1",
     "express-react-views": "^0.11.0",
     "gm": "^1.23.1",
     "homeassistant": "^0.2.0",
-    "moment-timezone": "^0.5.26",
+    "moment-timezone": "^0.5.31",
     "nib": "^1.1.2",
-    "react": "^16.8.6",
-    "react-dom": "^16.8.6",
-    "recharts": "^1.6.2",
-    "stylus": "^0.54.5",
-    "webshot": "^0.18.0"
+    "node-webshot": "^1.0.4",
+    "react": "^16.13.1",
+    "react-dom": "^16.13.1",
+    "recharts": "^1.8.5",
+    "stylus": "^0.54.8"
   }
 }

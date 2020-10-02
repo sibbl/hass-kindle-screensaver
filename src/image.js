@@ -1,4 +1,4 @@
-const webshot = require("webshot"),
+const webshot = require("node-webshot"),
     gm = require("gm"),
     config = require("../config");
 
