@@ -11,6 +11,7 @@ module.exports = {
   entities: {
     temperature: process.env.HA_ENTITY_TEMPERATURE,
     weather: process.env.HA_ENTITY_WEATHER,
+    battery: process.env.HA_ENTITY_BATTERY,
   },
   rendering: {
     screenSize: {

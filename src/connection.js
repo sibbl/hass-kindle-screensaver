@@ -103,6 +103,18 @@ const fetchData = async () => {
   };
 };
 
+const updateBatteryEntity = (batteryLevel) => {
+  if (!config.entities.battery) {
+    return;
+  }
+
+  hass.services.call("set_value", "input_number", {
+    entity_id: config.entities.battery,
+    value: batteryLevel,
+  });
+};
+
 module.exports = {
   fetchData,
+  updateBatteryEntity,
 };

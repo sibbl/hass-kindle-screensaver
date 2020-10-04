@@ -9,6 +9,7 @@ services:
       - HA_TOKEN=eyJ0...
       - HA_ENTITY_TEMPERATURE=sensor.outdoor_temperature
       - HA_ENTITY_WEATHER=weather.openweathermap
+      - HA_ENTITY_BATTERY=input_number.kindle_battery
       - MOMENT_TIMEZONE=Europe/London
       - MOMENT_LANGUAGE=en-US
     ports:

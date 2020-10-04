@@ -5,7 +5,8 @@
   CronJob = require("cron").CronJob,
   config = require("./config"),
   render = require("./src/render").render,
-  createImageAsync = require("./src/image").createImageAsync;
+  createImageAsync = require("./src/image").createImageAsync,
+  updateBatteryEntity = require("./src/connection").updateBatteryEntity;
 
 const app = express();
 
@@ -39,6 +40,7 @@ new CronJob({
 app.get("/", (request, response) => {
   if (!isNaN(request.query.battery)) {
     battery = request.query.battery;
+    updateBatteryEntity(battery);
   }
   response.status(200).sendFile(path.join(__dirname, "cover.png"));
 });
