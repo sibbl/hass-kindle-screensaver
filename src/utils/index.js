@@ -1,3 +1,3 @@
 module.exports = {
-    cropTimeseriesArray: require("./cropTimeseriesArray")
+  cropTimeseriesArray: require("./cropTimeseriesArray"),
 };
