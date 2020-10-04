@@ -1,6 +1,6 @@
 {
   "name": "kindle-dynamic-screensaver",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "kindle-dynamic-screensaver",
   "license": "MIT",
   "main": "app.js",
@@ -19,7 +19,7 @@
     "homeassistant": "^0.2.0",
     "moment-timezone": "^0.5.31",
     "nib": "^1.1.2",
-    "node-webshot": "^1.0.4",
+    "puppeteer": "^5.3.1",
     "react": "^16.13.1",
     "react-dom": "^16.13.1",
     "recharts": "^1.8.5",
