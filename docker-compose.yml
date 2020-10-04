@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  app:
+    image: sibbl/hass-kindle-screensaver:latest
+    environment:
+      - HA_HOST=https://your-hass-instance.com
+      - HA_PORT=443
+      - HA_TOKEN=eyJ0...
+      - HA_ENTITY_TEMPERATURE=sensor.outdoor_temperature
+      - HA_ENTITY_WEATHER=weather.openweathermap
+      - MOMENT_TIMEZONE=Europe/London
+      - MOMENT_LANGUAGE=en-US
+    ports:
+      - 5000:5000
