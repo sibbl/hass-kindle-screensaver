@@ -2,6 +2,8 @@
 
 This tool can be used to display an overview of your Home Assistant instance on e.g. a [jailbroken](https://www.mobileread.com/forums/showthread.php?t=236104) Kindle device.
 
+If you're looking for a way to render a Lovelace view, see my newer project [hass-lovelace-kindle-screensaver](https://github.com/sibbl/hass-lovelace-kindle-screensaver).
+
 ## Demo
 
 ![Demo Screenshot](../assets/screenshot.png?raw=true)
